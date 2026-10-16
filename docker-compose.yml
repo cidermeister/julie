@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  jules-replica:
+    build:
+      context: ./jules-replica
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount the database to persist data between container restarts
+      - ./jules-replica/prisma/dev.db:/app/prisma/dev.db
+    environment:
+      - NODE_ENV=production
