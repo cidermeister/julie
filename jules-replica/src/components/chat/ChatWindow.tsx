@@ -30,17 +30,21 @@ export default function ChatWindow({ chatId }: { chatId: string }) {
   useEffect(() => {
     let mounted = true;
     const loadAgentsAndMessages = async () => {
-      const [agentsRes, messagesRes] = await Promise.all([
-        fetch('/api/agents'),
-        chatId ? fetch(`/api/chats/${chatId}/messages`) : Promise.resolve(null)
-      ]);
+      try {
+        const [agentsRes, messagesRes] = await Promise.all([
+          fetch('/api/agents'),
+          chatId ? fetch(`/api/chats/${chatId}/messages`) : Promise.resolve(null)
+        ]);
 
-      const agentsData = await agentsRes.json();
-      const messagesData = messagesRes ? await messagesRes.json() : [];
+        const agentsData = agentsRes.ok ? await agentsRes.json() : [];
+        const messagesData = messagesRes && messagesRes.ok ? await messagesRes.json() : [];
 
-      if (mounted) {
-        setAgents(agentsData);
-        if (messagesRes) setMessages(messagesData);
+        if (mounted) {
+          if (agentsRes.ok) setAgents(agentsData);
+          if (messagesRes?.ok) setMessages(messagesData);
+        }
+      } catch (err) {
+        console.error(err);
       }
     };
 
@@ -73,12 +77,16 @@ export default function ChatWindow({ chatId }: { chatId: string }) {
     const tempUserMsg = { id: Date.now().toString(), role: 'user', content: userMessageContent };
     setMessages(prev => [...prev, tempUserMsg]);
 
-    // Save user message to DB
-    await fetch(`/api/chats/${chatId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'user', content: userMessageContent }),
-    });
+    try {
+      // Save user message to DB
+      await fetch(`/api/chats/${chatId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: 'user', content: userMessageContent }),
+      });
+    } catch (e) {
+      console.error(e);
+    }
 
     const mentionedAgents = parseTags(userMessageContent);
 
@@ -109,6 +117,11 @@ export default function ChatWindow({ chatId }: { chatId: string }) {
             keys: settings,
           }),
         });
+
+        if (!aiRes.ok) {
+           console.error("AI Generation failed");
+           continue;
+        }
 
         const aiData = await aiRes.json();
 

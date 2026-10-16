@@ -1,35 +1,46 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  const messages = await prisma.message.findMany({
-    where: { chatId: id },
-    orderBy: { createdAt: 'asc' }
-  });
-  return NextResponse.json(messages);
+  try {
+    const { id } = await context.params;
+    const messages = await prisma.message.findMany({
+      where: { chatId: id },
+      orderBy: { createdAt: 'asc' }
+    });
+    return NextResponse.json(messages);
+  } catch (error: unknown) {
+    console.error('Error fetching messages:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Failed to fetch messages', details: errorMessage }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const { id } = await context.params;
-  const body = await req.json();
-  const { role, content, agentName } = body;
+  try {
+    const { id } = await context.params;
+    const body = await req.json();
+    const { role, content, agentName } = body;
 
-  const message = await prisma.message.create({
-    data: {
-      chatId: id,
-      role,
-      content,
-      agentName,
-    },
-  });
+    const message = await prisma.message.create({
+      data: {
+        chatId: id,
+        role,
+        content,
+        agentName,
+      },
+    });
 
-  await prisma.chat.update({
-    where: { id: id },
-    data: { updatedAt: new Date() }
-  });
+    await prisma.chat.update({
+      where: { id: id },
+      data: { updatedAt: new Date() }
+    });
 
-  return NextResponse.json(message);
+    return NextResponse.json(message);
+  } catch (error: unknown) {
+    console.error('Error creating message:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Failed to create message', details: errorMessage }, { status: 500 });
+  }
 }

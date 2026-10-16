@@ -14,13 +14,18 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
     const loadChats = async () => {
-      const res = await fetch('/api/chats');
-      const data = await res.json();
-      if (mounted) {
-        setChats(data);
-        if (data.length > 0 && !activeChatId) {
-          setActiveChatId(data[0].id);
+      try {
+        const res = await fetch('/api/chats');
+        if (!res.ok) throw new Error('Failed to fetch chats');
+        const data = await res.json();
+        if (mounted) {
+          setChats(data);
+          if (data.length > 0 && !activeChatId) {
+            setActiveChatId(data[0].id);
+          }
         }
+      } catch (err) {
+        console.error(err);
       }
     };
     loadChats();
@@ -28,14 +33,19 @@ export default function Home() {
   }, [activeChatId]);
 
   const handleNewChat = async () => {
-    const res = await fetch('/api/chats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'New Chat' }),
-    });
-    const chat = await res.json();
-    setChats([chat, ...chats]);
-    setActiveChatId(chat.id);
+    try {
+      const res = await fetch('/api/chats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'New Chat' }),
+      });
+      if (!res.ok) throw new Error('Failed to create chat');
+      const chat = await res.json();
+      setChats([chat, ...chats]);
+      setActiveChatId(chat.id);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
