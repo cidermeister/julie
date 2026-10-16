@@ -11,6 +11,8 @@ export default function AgentsManager() {
   const [systemPrompt, setSystemPrompt] = useState('');
   const router = useRouter();
 
+  // Example dummy dependency array state or effect to satisfy unused var checks (if necessary, though removing the 'e' var is better)
+
   const handleCreate = async () => {
     try {
       const res = await fetch('/api/agents', {
@@ -25,10 +27,12 @@ export default function AgentsManager() {
         setSystemPrompt('');
         router.refresh();
       } else {
-        toast.error('Failed to create agent');
+        const errorData = await res.json();
+        toast.error(`Failed to create agent: ${errorData.details || errorData.error || 'Unknown error'}`);
       }
     } catch (e) {
-      toast.error('Error creating agent');
+      toast.error('Network error creating agent');
+      console.error(e);
     }
   };
 
