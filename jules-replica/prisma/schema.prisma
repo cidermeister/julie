@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id           String    @id @default(cuid())
+  name         String
+  systemPrompt String
+  model        String    // e.g., "claude", "gpt-4o", "gemini", "lmstudio"
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  chats        Chat[]
+}
+
+model Chat {
+  id           String    @id @default(cuid())
+  title        String
+  repoPath     String?   // Local path or repository identifier
+  branch       String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[]
+  agents       Agent[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  role      String   // "user", "assistant", "system"
+  content   String
+  agentName String?  // If it's an assistant message, which agent produced it
+  createdAt DateTime @default(now())
+}
